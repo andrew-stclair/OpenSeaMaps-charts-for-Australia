@@ -1,2 +1,4 @@
 *.osm.pbf
 *.mbtiles
+*.000
+__pycache__/**

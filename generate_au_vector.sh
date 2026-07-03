@@ -5,6 +5,7 @@ set -e
 WORKING_DIR="$(pwd)"
 OUTPUT_DIR="$WORKING_DIR/openseamap_charts"
 OUTPUT_FILE="$OUTPUT_DIR/australia_nautical_vector_$(date +%F).mbtiles"
+OUTPUT_ENC="$OUTPUT_DIR/australia_nautical_$(date +%F).000"
 
 # Geofabrik Oceania Extract URL
 PBF_URL="https://download.geofabrik.de/australia-oceania-latest.osm.pbf"
@@ -44,11 +45,16 @@ tilemaker --input nautical.osm.pbf \
           --process "$WORKING_DIR/openseamap_process.lua" \
           --config "$WORKING_DIR/openseamap_config.json"
 
-echo "Step 5: Cleaning up temporary files..."
+echo "Step 5: Generating supplemental S-57 ENC chart..."
+/usr/bin/python3 "$WORKING_DIR/osm_to_enc.py" nautical.osm.pbf "$OUTPUT_ENC"
+
+echo "Step 6: Cleaning up temporary files..."
 rm oceania.osm.pbf australia.osm.pbf nautical.osm.pbf
 
 echo "=========================================================="
-echo " SUCCESS! Vector MBTiles generated at:"
-echo " $OUTPUT_FILE"
-echo " Size: $(du -sh "$OUTPUT_FILE" | awk '{print $1}')"
+echo " SUCCESS! Outputs generated:"
+echo " MBTiles : $OUTPUT_FILE"
+echo "   Size  : $(du -sh "$OUTPUT_FILE" | awk '{print $1}')"
+echo " S-57 ENC: $OUTPUT_ENC"
+echo "   Size  : $(du -sh "$OUTPUT_ENC" | awk '{print $1}')"
 echo "=========================================================="
