@@ -1,0 +1,16 @@
+{
+    "layers": {
+        "seamarks": { "minzoom": 3, "maxzoom": 14 }
+    },
+    "settings": {
+        "minzoom": 3,
+        "maxzoom": 14,
+        "basezoom": 14,
+        "compress": "gzip",
+        "metadata": {
+            "name": "OpenSeaMap Australia Vector",
+            "description": "Automated Vector Seamarks for Australia",
+            "format": "pbf"
+        }
+    }
+}
