@@ -1,5 +1,6 @@
 {
     "layers": {
+        "land":           { "minzoom": 0,  "maxzoom": 14 },
         "seamarks":       { "minzoom": 7,  "maxzoom": 14 },
         "coastline":      { "minzoom": 0,  "maxzoom": 14 },
         "water":          { "minzoom": 4,  "maxzoom": 14 },

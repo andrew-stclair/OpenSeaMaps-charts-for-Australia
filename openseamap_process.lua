@@ -74,6 +74,8 @@ function way_function(way)
     -- Coastline
     if natural == "coastline" then
         way:Layer("coastline", false)
+        -- Closed coastline = island polygon; emit as filled land area
+        way:Layer("land", true)
         return
     end
 

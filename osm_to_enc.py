@@ -51,16 +51,18 @@ OBJL = {
     "UWTROC": 153, "WRECKS": 159, "OBSTRN": 86,
     "MORFAC": 84,  "HRBFAC": 64,  "SMCFAC": 128, "PILPNT": 90,  "SOUNDG": 129,
     "COALNE": 30,  "DEPCNT": 43,  "SLCONS": 122,
-    "ACHARE":  4,  "FAIRWY": 51,  "TSEZNE": 150, "RESARE": 112,
-    "MARFAR": 315, "CBLARE": 20,  "PIPARE": 92,  "PRCARE": 96,
+    "LNDARE": 71,  "DEPARE": 42,  "M_COVR": 302,
+    "ACHARE":  4,  "FAIRWY": 51,  "TSEZNE": 150,  "RESARE": 112,
+    "MARFAR": 315, "CBLARE": 20,  "PIPARE": 92,   "PRCARE": 96,
     "DRGARE": 46,  "HRBARE": 63,
 }
 
 # Attribute codes (ATTL) — from /usr/share/gdal/s57attributes.csv
 ATTL = {
     "COLOUR": 75, "OBJNAM": 116, "BOYSHP":  4, "LITCHR": 107,
-    "SIGPER": 142, "HEIGHT": 95, "VALNMR": 178, "CATWRK": 71,
-    "WATLEV": 187, "VALDCO": 174,
+    "SIGPER": 142, "HEIGHT": 95,  "VALNMR": 178, "CATWRK": 71,
+    "WATLEV": 187, "VALDCO": 174, "DRVAL1": 93,  "DRVAL2": 94,
+    "CATCOV": 52,
 }
 
 # ── OpenSeaMap seamark:type → S-57 object code ────────────────────────────────
@@ -185,6 +187,13 @@ class NauticalHandler(osmium.SimpleHandler):
         ww  = tags.get("waterway","")
         if nat=="coastline":
             self.lines.append(("COALNE",coords,tags))
+            if is_closed:
+                # Closed coastline = island/land polygon → fills land with colour
+                self.areas.append(("LNDARE",coords,tags))
+        elif nat=="water" or nat=="bay":
+            if is_closed:
+                self.areas.append(("DEPARE",coords,tags))
+            return
         elif dep:
             self.lines.append(("DEPCNT",coords,tags))
         elif st in SEAMARK_AREA_MAP:
@@ -229,6 +238,11 @@ def build_attf(tags, code):
         for k in _SHAPE_KEYS:
             sv=tags.get(k,"").lower()
             if sv in BOYSHP_MAP: attrs.append((ATTL["BOYSHP"],BOYSHP_MAP[sv])); break
+    if code=="M_COVR":
+        attrs.append((ATTL["CATCOV"], "1"))  # 1 = coverage
+    if code=="DEPARE":
+        attrs.append((ATTL["DRVAL1"], "0.0"))
+        attrs.append((ATTL["DRVAL2"], "9999.0"))
     if code=="DEPCNT":
         raw=tags.get("depth","")
         if raw:
@@ -404,7 +418,7 @@ class S57Writer:
 
     # ── Feature records ───────────────────────────────────────────────────────
 
-    def _write_frid(self, objl_code, prim, vrcid, rcnm_v, attf_pairs):
+    def _write_frid(self, objl_code, prim, vrcid, rcnm_v, attf_pairs, grup=1):
         """Write a FRID + FOID + ATTF + FSPT record."""
         rcid = self._frcid; self._frcid += 1
         fidn = self._fidn;  self._fidn  += 1
@@ -413,9 +427,9 @@ class S57Writer:
         f_0001 = _u16(RCNM_FE)
         f_frid = (
             _u8(RCNM_FE) + _u32(rcid) +
-            _u8(prim) + _u8(1) +         # PRIM, GRUP=1
-            _u16(objl) +                 # OBJL
-            _u16(1) + _u8(1)             # RVER=1, RUIN=1
+            _u8(prim) + _u8(grup) +          # PRIM, GRUP (1=geo, 2=meta)
+            _u16(objl) +                     # OBJL
+            _u16(1) + _u8(1)                 # RVER=1, RUIN=1
         )
         f_foid = _u16(0) + _u32(fidn) + _u16(1)   # AGEN=0, FIDN, FIDS=1
 
@@ -425,7 +439,7 @@ class S57Writer:
         if attf_pairs:
             for i,(attl,atvl) in enumerate(attf_pairs):
                 sep = UT if i < len(attf_pairs)-1 else b""
-                f_attf += _u16(attl) + atvl.encode("latin-1") + sep
+                f_attf += _u16(attl) + atvl.encode("latin-1", errors="replace") + sep
         else:
             f_attf = None   # omit ATTF if no attributes
 
@@ -460,13 +474,32 @@ class S57Writer:
         attf  = build_attf(tags, code)
         self._write_frid(code, PRIM_AREA, vrcid, RCNM_VE, attf)
 
+    def add_meta_area(self, code, coords, tags):
+        """Write a meta-object area feature (GRUP=2), e.g. M_COVR."""
+        if len(coords) < 4: return
+        vrcid = self._write_vrid_area(coords)
+        attf  = build_attf(tags, code)
+        self._write_frid(code, PRIM_AREA, vrcid, RCNM_VE, attf, grup=2)
+
     def close(self):
         self._fp.close()
 
 # ── Top-level pipeline ────────────────────────────────────────────────────────
 
+# Bounding box for Australian waters (CCW so interior = chart area)
+_AU_BBOX_DEPARE = [
+    (112.0, -44.0), (154.0, -44.0), (154.0, -9.0), (112.0, -9.0), (112.0, -44.0)
+]
+
 def write_enc(handler, output_path, dataset_name="AU_NAUTICAL"):
     w = S57Writer(output_path, dataset_name=dataset_name)
+    # M_COVR declares the chart cell's coverage area to OpenCPN; without it
+    # the renderer has no activation boundary and shows everything as grey.
+    w.add_meta_area("M_COVR", _AU_BBOX_DEPARE, {})
+    # Write a sea-extent DEPARE first so the chart background is coloured as
+    # water rather than grey.  LNDARE island polygons written afterwards will
+    # override this within their extent.
+    w.add_area("DEPARE", _AU_BBOX_DEPARE, {})
     for code,lon,lat,tags in handler.points:
         w.add_point(code,lon,lat,tags)
     for code,coords,tags in handler.lines:
