@@ -301,7 +301,7 @@ def _make_dr(fields):
 class S57Writer:
     """Writes an IHO S-57 ENC (.000) file using direct ISO 8211 binary encoding."""
 
-    def __init__(self, filepath, dataset_name="AU_NAUTICAL", cscl=90000):
+    def __init__(self, filepath, dataset_name="AU_NAUTICAL", cscl=10000000):
         self._fp = open(filepath, "wb")
         self._name  = dataset_name
         self._cscl  = cscl
@@ -319,7 +319,7 @@ class S57Writer:
         f_0001 = _u16(RCNM_DS)                       # (b12) RCNM for DSID record
         f_dsid = (
             _u8(10)  + _u32(1)  +                    # RCNM=10, RCID=1
-            _u8(1)   + _u8(4)   +                    # EXPP=1(new), INTU=4(harbour)
+            _u8(1)   + _u8(1)   +                    # EXPP=1(new), INTU=1(overview)
             self._name.encode("latin-1") + UT +      # DSNM
             b"1" + UT + b"0" + UT +                  # EDTN, UPDN
             today + today +                          # UADT(8), ISDT(8) — fixed length
@@ -443,11 +443,14 @@ class S57Writer:
         else:
             f_attf = None   # omit ATTF if no attributes
 
-        # FSPT: NAME(5 bytes = [RCNM(1)][RCID(4)LE]) + ORNT + USAG + MASK
+        # FSPT: NAME(5 bytes = [RCNM(1)][RCID(4)LE]) + ORNT + USAG + TOPI + MASK
+        # Must be 9 bytes — matches DDR schema (*NAME!ORNT!USAG!TOPI!MASK)(B(40),b11,b11,b11,b11)
+        # The VRPT field (line node pointers) already writes all 9 bytes correctly.
         name = bytes([rcnm_v]) + _u32(vrcid)
-        ornt = 1 if prim in (PRIM_LINE, PRIM_AREA) else 255
-        usag = 1 if prim == PRIM_AREA else 255
-        f_fspt = name + _u8(ornt) + _u8(usag) + _u8(255)  # MASK=255(null)
+        ornt = 1   if prim in (PRIM_LINE, PRIM_AREA) else 255
+        usag = 1   if prim == PRIM_AREA               else 255
+        topi = 2   if prim == PRIM_AREA               else 255  # 2=outer ring, 255=null
+        f_fspt = name + _u8(ornt) + _u8(usag) + _u8(topi) + _u8(255)  # MASK=255(null)
 
         fields = [("0001",f_0001),("FRID",f_frid),("FOID",f_foid)]
         if f_attf is not None:
