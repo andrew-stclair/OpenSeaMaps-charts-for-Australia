@@ -1,0 +1,49 @@
+🧹 Cleaning up previous workspace...
+⚓ [1/6] Initialising workspace...
+✂️ [2/6] Preparing source OSM dataset for chart conversion...
+🪡 [3/6] Fixing broken coastlines & closing geometry...
+⚠️ osmcoastline reported geometry errors but generated a usable land polygon database (exit 0). Continuing.
+[ 0:12] Close broken rings... (Use --close-distance/-c 0 if you do not want this.)
+[ 0:12]   Closing if distance between nodes smaller than 1. (Set this with --close-distance/-c.)
+[ 0:12]   Closed 2 rings. This left 0 nodes where the coastline could not be closed.
+[ 0:12] Not writing out rings. (Use option --output-rings/-r if you want the rings.)
+[ 0:12] Create polygons...
+[ 0:14] Fixing coastlines going the wrong way...
+[ 0:14]   Turned 4 polygons around.
+[ 0:14] Not writing coastlines as lines (Use --output-lines/-l if you want this).
+[ 0:14] Checking for questionable input data...
+[ 0:14]   Found 0 rings in input data.
+[ 0:14] Split polygons with more than 1000 points... (Use --max-points/-m to change this. Set to 0 not to split at all.)
+[ 0:14]   Using overlap of 0.0001 (Set this with --bbox-overlap/-b).
+[ 0:35] Checking and making polygons valid...
+[ 0:36] Writing out land polygons...
+[ 0:38] Memory used: current: 1781 MBytes, peak: 1781 MBytes
+[ 0:38] Committing database transactions...
+[ 0:38] All done.
+[ 0:38] Memory used: current: 1781 MBytes, peak: 1781 MBytes
+There were 4 warnings.
+There were 2 errors.
+🏷️ [4/6] Filtering OpenSeaMap seamark infrastructure & features...
+🌊 [5/6] Automating NOAA Bathymetric Data retrieval & contour calculation...
+⚠️ NOAA bathymetry service is unavailable in this environment. Compiling chart without depth attributes.
+🏗️ [6/6] Compiling final S-57 vector interchange chart (.000)...
+Warning 1: layer names ignored in combination with -sql.
+Warning 1: layer names ignored in combination with -sql.
+Warning 1: layer names ignored in combination with -sql.
+Warning 1: layer names ignored in combination with -sql.
+Warning 1: layer names ignored in combination with -sql.
+✅ Layer 'LNDARE' has 52271 features
+✅ Layer 'LIGHTS' has 249 features
+✅ Layer 'BOYLAT' has 77 features
+✅ Layer 'BCNLAT' has 160 features
+✅ Layer 'OBSTRN' has 9 features
+✅ Layer 'FERYRT' has 947 features
+✅ Final S57 layer 'DSID' exported with 1 features
+✅ Final S57 layer 'LNDARE' exported with 52271 features
+✅ Final S57 layer 'LIGHTS' exported with 249 features
+✅ Final S57 layer 'BOYLAT' exported with 77 features
+✅ Final S57 layer 'BCNLAT' exported with 160 features
+✅ Final S57 layer 'OBSTRN' exported with 9 features
+✅ Final S57 layer 'FERYRT' exported with 947 features
+🎉 Success! Your custom vector S-57 chart file is generated at: australia.000
+📂 You can load this directly into navigational software tools like OpenCPN.

@@ -1,8 +1,12 @@
 # OpenSeaMaps-charts-for-Australia
 
 ```bash
-sudo apt update
-sudo apt install tilemaker osmium-tool wget python3-pyosmium -y
+sudo apt update && sudo apt install -y \
+  osmium-tool \
+  osmcoastline \
+  gdal-bin \
+  curl \
+  python3-gdal
 ```
 ### AI disclosure
 
